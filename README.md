@@ -45,17 +45,36 @@ This section details the step-by-step troubleshooting process undertaken to get 
 * **Initial VOSpace Problem:** Initial attempts to `GET` VOSpace nodes (e.g., `/home/testuser`) resulted in a `ca.nrc.cadc.net.ResourceNotFoundException: NodeNotFound: vos://localhost~cavern_test_instance/home/testuser` error. This `NodeNotFound` error was expected, as the VOSpace path did not yet exist in Cavern's underlying data storage (`./data/cavern_files`). This confirmed core services were communicating.
 * **Solution Attempt (leading to current issue):** An attempt to create the `ContainerNode` via a `PUT` request with an XML payload was made. This led directly to the "Latest Current Issue" detailed below.
 
+
+
 ## 3. Latest Current Issue: Cavern VOSpace Node Creation (XML Schema Validation Failure)
 
-**Problem:**
-When attempting to create a VOSpace `ContainerNode` using a `PUT` request to Cavern's API, the service returns an `InvalidArgument` error with the message: `XML failed schema validation: Error on line 1: cvc-elt.1.a: Cannot find the declaration of element 'vos:ContainerNode'.`.
+This section outlines the current problems affecting the functionality of the Cavern web application. Both issues point to underlying problems with how the Cavern web application is built and deployed.
 
-**Details:**
-This indicates that:
-* The client is sending correctly formatted VOSpace 2.0 XML with the `vos:ContainerNode` element and the `http://www.ivoa.net/xml/VOSpace/v2.0` namespace. This format aligns with VOSpace standards and Cavern's internal `xmlprocessor.java` confirms its expectation of `VOSpace-2.1.xsd` corresponding to this namespace.
-* However, Cavern's internal XML parser is, for an unknown reason, unable to locate or properly recognize the definition of `ContainerNode` within its own loaded VOSpace schema.
+### 3.1. Cavern VOSpace Node Creation (XML Schema Validation Failure)
 
-This is a **server-side problem within the Cavern image's configuration or bundled schema files**, as client-side adjustments to the `xsi:schemaLocation` attribute (or its removal) have not resolved the validation failure. It points to a deeper issue with how Cavern's XML validator processes or accesses its internal schema definitions.
+* **Problem:** When attempting to create a VOSpace `ContainerNode` using a `PUT` request to Cavern's API, the service returns an `InvalidArgument` error with the message: `XML failed schema validation: Error on line 1: cvc-elt.1.a: Cannot find the declaration of element 'vos:ContainerNode'.`.
+
+* **Details:** This indicates that:
+    * The client is sending correctly formatted VOSpace 2.0 XML with the `vos:ContainerNode` element and the `http://www.ivoa.net/xml/VOSpace/v2.0` namespace. This format aligns with VOSpace standards and Cavern's internal `xmlprocessor.java` confirms its expectation of `VOSpace-2.1.xsd` corresponding to this namespace.
+    * However, Cavern's internal XML parser is, for an unknown reason, unable to locate or properly recognize the definition of `ContainerNode` within its own loaded VOSpace schema.
+
+* **Current Status:** This is a **server-side problem within the Cavern image's configuration or bundled schema files**, as client-side adjustments to the `xsi:schemaLocation` attribute (or its removal) have not resolved the validation failure. It points to a deeper issue with how Cavern's XML validator processes or accesses its internal schema definitions. We were preparing to investigate this by enabling verbose server-side logging after resolving other immediate issues.
+
+### 3.2. Missing Swagger UI Static Assets
+
+* **Problem:** When accessing the Cavern API homepage (`https://localhost:8443/cavern/`) in a web browser, the page appears unstyled, and the browser's developer console shows numerous `Failed to load resource: the server responded with a status of 404` errors for critical Swagger UI CSS (e.g., `screen.css`, `typography.css`) and JavaScript files (e.g., `jquery-1.8.0.min.js`, `swagger-ui.js`).
+* **Context & Initial Fix:** Initially, an `HTTP Status 404 – Not Found` was encountered due to an un-evaluated `${request.servletPath}` placeholder in `index.html`. This was corrected to use a static relative path (`href="/cavern/"`) for the logo link, resolving the immediate link error.
+* **Root Cause Identified:** Inspection of the local source code repository (`opencadc/vos/vos-main/cavern/src/main/webapp`) confirmed that the `css/`, `js/`, and `lib/` directories (containing these Swagger UI assets) are missing from the local clone. This indicates these assets are not being correctly packaged into the `cavern.war` file during the Gradle build.
+
+### Overall Summary of Current Issues
+
+Both issues (XML Schema Validation Failure and Missing Swagger UI Assets) point to a fundamental problem with the Cavern web application's build and deployment process. Critical static assets (for Swagger UI) and potentially critical XML schema definition files (for VOSpace validation) are not being consistently included in the final `cavern.war` artifact. This suggests either:
+* An incomplete or corrupted local clone of the repository.
+* A missing or failing Gradle build step that is supposed to download, generate, or copy these necessary files into the `src/main/webapp` directory before the `.war` is assembled.
+
+Our immediate next step is to address the missing Swagger UI assets by ensuring they are present in the `src/main/webapp` directory, then rebuilding and redeploying Cavern. Once the Swagger UI is functional, we can then proceed with the detailed server-side logging to diagnose the persistent XML schema validation error.
+
 
 ## 4. `curl` Commands for Verification and Operations
 

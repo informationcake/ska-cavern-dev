@@ -11,29 +11,24 @@ This project relies on additional external repositories for its build contexts. 
 
 ## 1. Services Overview
 
-The `docker-compose.yml` orchestrates the following key services:
+The `docker-compose.yml` orchestrates the following key services, outlining their roles and how they interact:
 
-* **`core`**: The main data preparer application.
-* **`celery-worker`**: Handles asynchronous tasks for data preparation.
-* **`rabbitmq`**: Message broker for Celery.
-* **`postgres_cavern`**: PostgreSQL database for Cavern's UWS.
-* **`postgres_posixmapper`**: PostgreSQL database for PosixMapper.
-* **`haproxy`**: SSL termination and reverse proxy for `cavern` and `posixmapper-proxy`.
-* **`posixmapper-proxy`**: Nginx proxy for `posixmapper` capabilities and routing.
-* **`posixmapper`**: Service for POSIX user/group mapping.
-* **`registrymock`**: Mock IVOA Registry and OIDC provider.
+* **`core`**: This is the main data preparer application (exposed on host port `8000`). It's responsible for orchestrating data preparation jobs, which often involve interacting with `cavern` to manage VOSpace files.
+* **`celery-worker`**: These are background workers that pick up tasks from `rabbitmq`. They are responsible for executing the actual data operations, such as creating user directories within VOSpace.
+* **`rabbitmq`**: Acts as a message broker for `celery-worker` tasks, facilitating asynchronous communication between `core` and its workers.
+* **`postgres_cavern`**: A PostgreSQL instance dedicated to storing data for Cavern's Universal Worker Service (UWS), which manages asynchronous jobs within Cavern itself. It initializes with a `uws` schema.
+* **`postgres_posixmapper`**: Another PostgreSQL instance used by the `posixmapper` service for storing POSIX mapping data. It initializes with a `mapping` schema.
+* **`haproxy`**: Serves as the central entry point for external HTTPS traffic to `cavern` and `posixmapper-proxy`. It performs SSL termination (listening on host port `8443` and forwarding to internal port `443` HTTPS) and acts as a reverse proxy, routing requests based on URL paths.
+* **`posixmapper-proxy`**: An Nginx instance specifically configured to proxy requests to the `posixmapper` service. It's crucial for re-writing HTTPS requests to HTTP internally for `posixmapper` and serves static capabilities XML files related to POSIX mapping.
+* **`posixmapper`**: This service handles POSIX user and group ID mapping. It queries `postgres_posixmapper` for mapping information and is a dependency for services like `cavern` that need to resolve user identities to POSIX IDs.
+* **`cavern`**: The core VOSpace service. It provides VOSpace functionality, including node management and data transfers. It relies on `postgres_cavern` for its UWS database and interacts with `posixmapper` (via `posixmapper-proxy`) for user identity resolution.
+* **`registrymock`**: An Nginx instance acting as a mock IVOA Registry service. It serves predefined `resource-caps.xml` and handles OpenID Connect (OIDC) endpoints, providing static `.json` files for OIDC discovery, user information, and JWKS.
 
 ## 2. Steps Taken to Get Services Working
 
 This section details the step-by-step troubleshooting process undertaken to get the various services in the Ska-Cavern environment to a functional state.
 
-### 2.1. HAProxy and Registry Mock Setup
-
-* **HAProxy Role:** Configured for SSL termination and acting as a reverse proxy. It routes external `HTTPS` traffic on host port `8443` to internal `HTTP` services like `cavern` and `posixmapper-proxy`.
-* **Registry Mock Role:** Functions as a mock IVOA Registry service, providing static capabilities XML and OpenID Connect (OIDC) endpoints.
-* **Confirmation:** These services were configured correctly from the outset and did not require specific troubleshooting steps for their core functionality. Their successful operation was implicitly confirmed as other dependent services (like `cavern` and `posixmapper-proxy`) were able to communicate through them without errors directly related to `haproxy` or `registrymock` connectivity. For instance, `cavern` successfully imported `haproxy.crt` and configured its `PosixMapperClient` with a URL routed through `haproxy`.
-
-### 2.2. PosixMapper Database Connectivity Issues (Primary Blocker)
+### 2.1. PosixMapper Database Connectivity Issues (Primary Blocker)
 
 * **Problem:** Upon initial review of `docker compose logs posixmapper`, the service failed to start its database connection pool due to `java.lang.NumberFormatException: For input string: "${org.opencadc.posix.mapper.maxActive}"` and a critical `cp: cannot stat '/tmp/config/context.xml': No such file or directory` error.
 * **Diagnosis:** This indicated that placeholders in `posixmapper`'s Tomcat `context.xml` were not being resolved. The `cp` error suggested that the intended `context.xml` file, which defines these properties, was not being successfully copied into the container's application directory during startup, leaving the default, unconfigured `context.xml` from the WAR file in use.

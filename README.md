@@ -65,5 +65,28 @@ You will need a valid Bearer token for authenticated requests.
 
 Verifies that the Cavern VOSpace capabilities are accessible. This should return an XML document describing the service's features.
 
-```bash
-curl -k https://localhost:8443/cavern/capabilities
+    curl -k https://localhost:8443/cavern/capabilities
+
+### 4.2. Submit Latest Job to Data Preparer (Core Service) and Attempt to Create a VOSpace Node (Reproduces Latest Error)
+
+This section provides the `curl` commands to submit a data preparation job and the command that currently reproduces the VOSpace node creation error.
+
+    curl -X POST \
+      -H 'Content-Type: application/json' \
+      -H 'Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJwcmVmZXJyZWRfdXNlcm5hbWUiOiJ0ZXN0dXNlciIsInN1YiI6ImxvY2FsdGVzdHVzZXJfaWQiLCJpYXQiOjE3NTAyOTU2OTAsImV4cCI6MTc1MDI5OTI5MH0.4lBmhoazmEiUjJRvWxdZTkEYKHUsQKVp9CtPZ-crz0Y' \
+      -d '[
+            ["testing:prepare_data_test.txt", "testing/84/1c/prepare_data_test.txt", "./testing"]
+          ]' \
+      http://localhost:8000/
+
+    curl -k -X PUT \
+      -H 'Content-Type: application/xml' \
+      -H 'Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJwcmVmZXJyZWRfdXNlcm5hbWUiOiJ0ZXN0dXNlciIsInN1YiI6ImxvY2FsdGVzdHVzZXJfaWQiLCJpYXQiOjE3NTAyOTU2OTAsImV4cCI6MTc1MDI5OTI5MH0.4lBmhoazmEiUjJRvWxdZTkEYKHUsQKVp9CtPZ-crz0Y' \
+      -d '<vos:ContainerNode xmlns:vos="http://www.ivoa.net/xml/VOSpace/v2.0">
+            <uri>vos://localhost~cavern_test_instance/home/testuser</uri>
+            <properties>
+                <property uri="ivo://ivoa.net/vospace/core#owner">testuser</property>
+                <property uri="ivo://ivoa.net/vospace/core#group">testgroup</property>
+            </properties>
+          </vos:ContainerNode>' \
+      https://localhost:8443/cavern/nodes/home/testuser

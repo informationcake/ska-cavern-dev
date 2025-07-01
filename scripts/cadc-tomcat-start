@@ -1,0 +1,97 @@
+#!/bin/bash
+
+SELF=cadc-tomcat-start
+
+CONFDIR=/config # Still points to where other config is mounted
+TEMP_CONFDIR=/tmp/config # New variable for the temporary mount point
+USER=$(whoami)
+
+TS=$(date)
+echo "$TS $SELF START"
+echo "user: $USER"
+echo "home: $HOME"
+echo "image version: $IMAGE_VERSION"
+
+if [ -f "$CONFDIR/catalina.properties" ]; then
+    echo "Configure tomcat with extra properties: $CONFDIR/catalina.properties"
+    cat "$CONFDIR/catalina.properties" >> /etc/tomcat/catalina.properties
+fi
+
+# Skip the war-rename.conf block if it's not present or causing issues.
+# if [ -f "$CONFDIR/war-rename.conf" ]; then
+#      while read line
+#      do
+#          if [ "$MV" != "mv" ]; then
+#              echo "war-rename: $line SKIPPED"
+#          else
+#              echo "war-rename: $line"
+#              cd /usr/share/tomcat/webapps && $line
+#          fi
+#      done < "$CONFDIR/war-rename.conf"
+# fi
+
+if [ -f "$CONFDIR/tomcat.conf" ]; then
+    echo "Configure tomcat with extra properties: $CONFDIR/tomcat.conf"
+    cat "$CONFDIR/tomcat.conf" >> /etc/tomcat/tomcat.conf
+fi
+
+if [ -e "$CONFDIR/cacerts" ]; then
+    echo "Configure CA bundle with extra certificates: $CONFDIR/cacerts"
+    cp "$CONFDIR/cacerts"/* /etc/pki/ca-trust/source/anchors/
+    # This 'sudo update-ca-trust' might be an issue if sudo isn't configured,
+    # but it seems to work from previous logs.
+    sudo update-ca-trust
+fi
+
+mkdir -p "$HOME"/.ssl
+chmod 700 "$HOME"/.ssl
+for pcf in "$CONFDIR"/*.pem; do
+    echo "Link proxy certificate: $pcf"
+    ln -s "$pcf" "$HOME"/.ssl/
+done
+
+ln -s /config "$HOME"/config
+
+echo "Installing unzip..."
+dnf install -y unzip # Use dnf for Fedora/RHEL
+
+# --- NEW CODE BLOCK: Manual WAR Unpacking ---
+# This section ensures the WAR is unpacked properly, bypassing Tomcat's
+# potentially problematic auto-unpacking for this specific image.
+TARGET_APP_DIR="/usr/share/tomcat/webapps/posix-mapper"
+WAR_FILE="/var/lib/tomcat/webapps/posix-mapper.war"
+
+echo "Attempting manual WAR unpacking..."
+
+# Ensure the target application directory exists
+mkdir -p "$TARGET_APP_DIR"
+
+# Optional: Clean existing unpacked content (good for fresh unpacks)
+# Be careful with 'rm -rf'. This removes all contents of the target app directory
+# before unpacking.
+rm -rf "$TARGET_APP_DIR"/*
+
+# Unpack the WAR file into the target directory
+if [ -f "$WAR_FILE" ]; then
+    # --- PREREQUISITE: 'unzip' is installed by the dnf command above ---
+    unzip -o "$WAR_FILE" -d "$TARGET_APP_DIR" # -o to overwrite existing files
+    echo "Manual WAR unpacking completed."
+else
+    echo "ERROR: WAR file not found at $WAR_FILE, cannot unpack. Exiting."
+    exit 1 # Exit if the WAR file itself is missing
+fi
+# --- END NEW CODE BLOCK (Manual WAR Unpacking) ---
+
+# --- Existing: Copy fixed context.xml after WAR unpacking (now it should work!) ---
+# This part ensures your customized context.xml (with hardcoded values) is applied
+# after the WAR has been unpacked by the above steps.
+echo "Copying fixed context.xml over unpacked WAR's version."
+# The META-INF directory (and its parent 'posix-mapper') should now exist
+# because of the manual unpacking performed just above.
+cp "$TEMP_CONFDIR/context.xml" "$TARGET_APP_DIR/META-INF/context.xml"
+# --- END Existing (Copy fixed context.xml) ---
+
+TS=$(date)
+echo "$TS $SELF DONE"
+
+/usr/libexec/tomcat/server start

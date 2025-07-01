@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<vosi:capabilities xmlns:vosi="http://www.ivoa.net/xml/VOSICapabilities/v1.0" xmlns:vr="http://www.ivoa.net/xml/VOResource/v1.0" xmlns:vs="http://www.ivoa.net/xml/VODataService/v1.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <capability standardID="http://www.opencadc.org/std/posix#user-mapping-0.1">
+    <interface xsi:type="vs:ParamHTTP" role="std">
+      <accessURL use="base">http://posixmapper-proxy:8080/posix-mapper/uid</accessURL>  <securityMethod />
+      <securityMethod standardID="ivo://ivoa.net/sso#token" />
+    </interface>
+  </capability>
+  <capability standardID="http://www.opencadc.org/std/posix#group-mapping-0.1">
+    <interface xsi:type="vs:ParamHTTP" role="std">
+      <accessURL use="base">http://posixmapper-proxy:8080/posix-mapper/gid</accessURL>  <securityMethod />
+      <securityMethod standardID="ivo://ivoa.net/sso#token" />
+    </interface>
+  </capability>
+  <capability standardID="ivo://ivoa.net/std/VOSI#capabilities">
+    <interface xsi:type="vs:ParamHTTP" role="std">
+      <accessURL use="full">http://posixmapper-proxy:8080/posix-mapper/capabilities</accessURL> </interface>
+  </capability>
+  <capability standardID="ivo://ivoa.net/std/VOSI#availability">
+    <interface xsi:type="vs:ParamHTTP" role="std">
+      <accessURL use="full">http://posixmapper-proxy:8080/posix-mapper/availability</accessURL> <securityMethod />
+    </interface>
+  </capability>
+  <capability standardID="vos://cadc.nrc.ca~vospace/CADC/std/LOGGING#logControl-1.0">
+    <interface xsi:type="vs:ParamHTTP" role="std" version="1.0">
+      <accessURL use="full">http://posixmapper-proxy:8080/posix-mapper/logControl</accessURL> </interface>
+  </capability>
+  <capability standardID="ivo://example.org/posix-mapper">
+    <interface xsi:type="vs:ParamHTTP" role="std">
+      <accessURL use="full">http://posixmapper-proxy:8080/posix-mapper/capabilities</accessURL>
+      <securityMethod />
+      <securityMethod standardID="ivo://ivoa.net/sso#token" />
+    </interface>
+  </capability>
+</vosi:capabilities>

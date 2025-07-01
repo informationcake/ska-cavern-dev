@@ -1,0 +1,16 @@
+FROM python:3.12-slim-bookworm
+
+USER root
+
+RUN apt-get update -y
+
+RUN groupadd user
+RUN adduser --system --no-create-home --disabled-password --shell /bin/bash user
+
+COPY --chown=user . /opt/ska-src-local-data-preparer
+WORKDIR /opt/ska-src-local-data-preparer
+RUN python -m pip install --no-cache-dir .
+
+USER root
+
+ENTRYPOINT ["/bin/bash", "./entrypoint.celery-worker.sh"]

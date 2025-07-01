@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<vosi:capabilities xmlns:vosi="http://www.ivoa.net/xml/VOSICapabilities/v1.0"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.ivoa.net/xml/VOSICapabilities/v1.0 http://www.ivoa.net/xml/VOSICapabilities/v1.0">
+    <capability standardID="ivo://opencadc.org/posix-mapper">
+        <interface xsi:type="vosi:WebService" role="std"
+                   ivoid="ivo://opencadc.org/posix-mapper"
+                   url="http://posixmapper:8080/posix-mapper/capabilities"/>
+    </capability>
+</vosi:capabilities>

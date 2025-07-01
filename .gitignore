@@ -1,0 +1,28 @@
+# Ignore Docker volumes and other generated data
+data/cavern_data/
+
+# Ignore logs and temporary files
+logs/
+temp/
+
+# Ignore build outputs
+**/build/
+**/.gradle/
+**/.m2/ # Maven local repo if used
+**/target/ # Maven build output
+artifacts/*.war # If you don't want to commit compiled WARs
+artifacts/*.jar
+
+# Ignore Python specifics
+*.pyc
+__pycache__/
+*.env # Environment variables if stored in files (e.g. .env)
+
+# Ignore common OS and editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# JVM crash logs
+hs_err_pid*.log

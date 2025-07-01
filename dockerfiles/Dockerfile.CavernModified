@@ -1,0 +1,16 @@
+FROM images.opencadc.org/library/cadc-tomcat:1
+
+## cavern specific
+RUN dnf update -y && dnf install -y curl acl attr && dnf clean all
+
+# Ensure previous webapps are cleaned before new deployment
+RUN rm -rf /usr/share/tomcat/webapps/*
+
+# Copy the generated WAR file into the Tomcat webapps directory
+# This path is relative to the build context (${HOME}/cavern-code/vos/cavern)
+COPY build/libs/cavern.war /usr/share/tomcat/webapps/cavern.war
+
+# cavern_startup.sh and cavern_init_cert.sh are mounted via Docker Compose volumes,
+# so they don't need to be copied here in the Dockerfile.
+# COPY cavern_startup.sh /usr/local/bin/cavern_startup.sh
+# COPY cavern_init_cert.sh /usr/local/bin/cavern_init_cert.sh

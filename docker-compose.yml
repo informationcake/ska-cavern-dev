@@ -154,6 +154,8 @@ services:
       - ./config/common:/config:ro
       #- ./scripts/wait-for-it.sh:/usr/local/bin/wait-for-it.sh:ro
       - ./scripts/cadc-tomcat-start:/usr/bin/cadc-tomcat-start:ro
+      - ./config/posixmapper/META-INF/context.xml:/usr/share/tomcat/webapps/posix-mapper/META-INF/context.xml:ro
+      #- ./config/posixmapper/META-INF/context.xml:/tmp/config/context.xml:ro
     networks:
       - preparedata-network
     depends_on:

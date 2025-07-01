@@ -8,10 +8,10 @@
         minEvictableIdleTimeMillis="60000" timeBetweenEvictionRunsMillis="30000"
         maxWait="20000"
         initialSize="0" minIdle="0"
-        maxIdle="8"   maxActive="8" username="${system.POSIX_MAPPER_USERNAME}"
-        password="${system.POSIX_MAPPER_PASSWORD}"
+        maxIdle="8"   maxActive="8" username="posixmapper"
+        password="posixmapperpwd"
         driverClassName="org.postgresql.Driver"
-        url="${system.POSIX_MAPPER_URL}"
+        url="jdbc:postgresql://postgres_posixmapper:5432/mapping"
         removeAbandoned="false"
         testOnBorrow="true" validationQuery="select 123" />
 </Context>

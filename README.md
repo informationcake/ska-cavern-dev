@@ -7,9 +7,11 @@ This README outlines the setup and troubleshooting steps for the Ska-Cavern deve
 This project relies on additional external repositories for its build contexts. Please ensure you have cloned the following repositories/directories into your home directory (`${HOME}`) before building and running the Docker Compose environment:
 
 * **`ska-src-dm-local-data-preparer`**: [This repository](https://gitlab.com/ska-telescope/src/src-dm/ska-src-dm-local-data-preparer) is the source for the `core` application and `celery-worker`. Ensure it is cloned into `~/ska-src-dm-local-data-preparer`.
+
+If you want to build the cavern image locally (currently WIP), you need:
 * **`cavern-code/vos/cavern`**: This directory within a [`cavern-code` repository](https://github.com/opencadc/vos/tree/main/cavern) is the build context for the `cavern` service. Ensure you clone `cavern-code` and that the `vos/cavern` path exists within it (e.g., `~/cavern-code/vos/cavern`).
 
-Update the gradle version (unsure why this is needed, perhaps a more recent push to VOS-Cavern isn't updated yet)
+Then update the gradle version (unsure why this is needed, perhaps a more recent push to VOS-Cavern isn't updated yet)
 In the build.gradle file, update the line:
 ```implementation 'org.opencadc:cadc-vos-server:[2.0.20,)'```
 to:

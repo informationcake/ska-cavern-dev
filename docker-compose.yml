@@ -108,7 +108,7 @@ services:
     container_name: ska-src-local-data-preparer-haproxy
     image: haproxytech/haproxy-debian:latest
     ports:
-      - "8443:443"
+      - "8443:443" # HAProxy listens on host 8443, forwards to its internal 443
     volumes:
       - ./config/haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
       - ./config/haproxy/haproxy.pem:/usr/local/etc/haproxy/haproxy.pem:ro
@@ -126,6 +126,10 @@ services:
     volumes:
       - ./config/nginx/posixmapper-proxy.conf:/etc/nginx/conf.d/posixmapper-proxy.conf:ro
       - ./config/common/posixmapper-static-capabilities.xml:/usr/share/nginx/html/posixmapper-static-capabilities.xml:ro
+      # REMOVED: - ./config/nginx/resource-caps.properties:/etc/nginx/resource-caps.properties:ro
+      # NEW: Mount the dummy XML file at the correct path
+      - ./config/nginx/dummy-resource-caps.xml:/etc/nginx/dummy-resource-caps.xml:ro # Keep this for the XML capabilities if needed elsewhere
+      #- ./config/nginx/dummy-resource-caps.properties:/etc/nginx/dummy-resource-caps.properties:ro # NEW/UPDATED VOLUME MOUNT for dummy PROPERTIES
     networks:
       - preparedata-network
     depends_on:
@@ -153,31 +157,41 @@ services:
     volumes:
       - ./config/common:/config:ro
       #- ./scripts/wait-for-it.sh:/usr/local/bin/wait-for-it.sh:ro
-      - ./scripts/cadc-tomcat-start:/usr/bin/cadc-tomcat-start:ro
+      #- ./scripts/cadc-tomcat-start:/usr/bin/cadc-tomcat-start:ro
       - ./config/posixmapper/META-INF/context.xml:/usr/share/tomcat/webapps/posix-mapper/META-INF/context.xml:ro
       #- ./config/posixmapper/META-INF/context.xml:/tmp/config/context.xml:ro
+      - ~/posixmapper_unpacked:/usr/share/tomcat/webapps/posix-mapper:rw
     networks:
       - preparedata-network
     depends_on:
       - postgres_posixmapper
       - registrymock
     #command: ["tail", "-f", "/dev/null"]
-    command: ["/usr/bin/cadc-tomcat-start"]
+    #command: ["/usr/bin/cadc-tomcat-start"]
 
-  # --- Cavern service itself ---
+  # --- Cavern service itself (UPDATED TO USE OFFICIAL IMAGE) ---
   cavern:
-    image: custom-cavern-debugged:latest
-    build:
-      context: ${HOME}/cavern-code/vos/cavern
-      dockerfile: ${HOME}/ska-cavern-dev/dockerfiles/Dockerfile.CavernModified
+    container_name: ska-src-local-data-preparer-cavern # Give it a specific name within this compose file
+    image: images.opencadc.org/platform/cavern:0.8.2 # Use the official image
+    # The 'build' section is removed as we are using a pre-built image
+    # build:
+    #   context: ${HOME}/cavern-code/vos/cavern
+    #   dockerfile: ${HOME}/ska-cavern-dev/dockerfiles/Dockerfile.CavernModified
+    # The 'ports' mapping is removed as HAProxy handles external exposure on 8443
+    # ports:
+    #   - "8443:8443"
     volumes:
+      # Keep these volumes if the official Cavern image expects data or config from your host
+      # You might need to verify if the internal paths are correct for the official image
       - ./data/cavern_data:/data/cavern_files:rw
       - ./config/common:/config:ro
-      - ./scripts/cavern_startup.sh:/usr/local/bin/cavern_startup.sh:ro
-      #- ./scripts/wait-for-it.sh:/usr/local/bin/wait-for-it.sh:ro
-      - ./config/haproxy/haproxy.crt:/tmp/haproxy/haproxy.crt:ro
-      - ./scripts/cavern_init_cert.sh:/usr/local/bin/cavern_init_cert.sh:ro
+      # Remove volumes that were specific to your custom Dockerfile or startup scripts
+      # - ./scripts/cavern_startup.sh:/usr/local/bin/cavern_startup.sh:ro
+      # - ./scripts/cavern_init_cert.sh:/usr/local/bin/cavern_init_cert.sh:ro
+      # - ./config/haproxy/haproxy.crt:/tmp/haproxy/haproxy.crt:ro
     environment:
+      # Keep environment variables that configure Cavern's behavior,
+      # assuming the official image uses these same environment variables for configuration.
       JAVA_OPTS: >
         -Dorg.opencadc.cavern.config.file=/config/cavern.properties
         -Djava.util.logging.config.file=/config/logging.properties
@@ -185,19 +199,20 @@ services:
         -Dlog4j.debug
         -Dca.nrc.cadc.util.PropertiesReader.dir=/config
       CLASSPATH: /config:${CLASSPATH:-}
-    user: root:root
+    user: root:root # Keep if necessary for permissions within the container
     networks:
       - preparedata-network
     depends_on:
       - postgres_cavern
       - posixmapper-proxy
       - registrymock
-    entrypoint: |
-      /bin/bash -c "
-        set -e
-        /usr/local/bin/cavern_init_cert.sh
-        /usr/local/bin/cavern_startup.sh
-      "
+    # The custom entrypoint is removed as the official image will have its own startup logic
+    # entrypoint: |
+    #   /bin/bash -c "
+    #     set -e
+    #     /usr/local/bin/cavern_init_cert.sh
+    #     /usr/local/bin/cavern_startup.sh
+    #   "
 
   # --- Mock Registry service to serve resource-caps.xml ---
   registrymock:
@@ -222,5 +237,5 @@ volumes:
   postgres_cavern_data:
   postgres_posixmapper_data:
   rabbitmq_data:
-  # rse_data:
-  # celery_results:
+  # rse_data: # Commented out as per your original file
+  # celery_results: # Commented out as per your original file

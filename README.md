@@ -30,57 +30,51 @@ The `docker-compose.yml` orchestrates the following key services, outlining thei
 * **`cavern`**: The core VOSpace service. It provides VOSpace functionality, including node management and data transfers. It relies on `postgres_cavern` for its UWS database and interacts with `posixmapper` (via `posixmapper-proxy`) for user identity resolution.
 * **`registrymock`**: An Nginx instance acting as a mock IVOA Registry service. It serves predefined `resource-caps.xml` and handles OpenID Connect (OIDC) endpoints, providing static `.json` files for OIDC discovery, user information, and JWKS.
 
-## 2. Steps Taken to Get Services Working
+## Troubleshooting Progress & Current Blocking Issue
 
-This section details the step-by-step troubleshooting process undertaken to get the various services in the Ska-Cavern environment to a functional state.
+This section summarizes the recent troubleshooting efforts to get Cavern fully operational, detailing the progression of issues and our current blocking problem.
 
-### 2.1. PosixMapper Database Connectivity Issues (Primary Blocker)
+### 1. Initial Problem: XML Schema Validation Failure (`cvc-elt.1.a`)
 
-* **Problem:** Upon initial review of `docker compose logs posixmapper`, the service failed to start its database connection pool due to `java.lang.NumberFormatException: For input string: "${org.opencadc.posix.mapper.maxActive}"` and a critical `cp: cannot stat '/tmp/config/context.xml': No such file or directory` error.
-* **Diagnosis:** This indicated that placeholders in `posixmapper`'s Tomcat `context.xml` were not being resolved. The `cp` error suggested that the intended `context.xml` file, which defines these properties, was not being successfully copied into the container's application directory during startup, leaving the default, unconfigured `context.xml` from the WAR file in use.
-* **Resolution Step 1: Direct `context.xml` Mount:** The `docker-compose.yml` was modified to directly mount the host's `config/posixmapper/META-INF/context.xml` to the final unpacked location within the container: `- ./config/posixmapper/META-INF/context.xml:/usr/share/tomcat/webapps/posix-mapper/META-INF/context.xml:ro`. The resulting "Device or resource busy" message during WAR unpacking confirmed this mount was active.
-* **Resolution Step 2: Hardcode Database URL:** Despite the direct mount, `posixmapper` still failed with `java.sql.SQLException: Driver:... returned null for URL:${system.POSIX_MAPPER_URL}`. To bypass this property substitution issue, the `url` attribute in `config/posixmapper/META-INF/context.xml` was hardcoded to `jdbc:postgresql://postgres_posixmapper:5432/mapping`.
-* **Resolution Step 3: Hardcode Username and Password:** Following the URL fix, `posixmapper` reported `FATAL: password authentication failed for user "${system.POSIX_MAPPER_USERNAME}"`. Similarly, the `username` and `password` attributes in `config/posixmapper/META-INF/context.xml` were hardcoded to `posixmapper` and `posixmapperpwd` respectively.
+* **Symptom:** When attempting to create a VOSpace `ContainerNode` via `PUT` request, Cavern returned `XML failed schema validation: Error on line 1: cvc-elt.1.a: Cannot find the declaration of element 'vos:ContainerNode'`. This indicated Cavern's internal XML parser couldn't locate/recognize `ContainerNode` in its schema.
+* **Resolution:** We switched the `cavern` service in `docker-compose.yml` to use the **official pre-built Docker image (`images.opencadc.org/platform/cavern:0.8.2`)**. This resolved the schema validation error and also fixed issues with the Swagger UI not rendering (due to missing static assets in the local build).
 
-**Outcome of PosixMapper Fixes:** `posixmapper` successfully connected to its database, completed initialization, and became fully functional.
+### 2. Intermediary Problem: `posixmapper` Deployment Failure (leading to Cavern 503)
 
-### 2.3. Cavern Service Initialization & VOSpace NodeNotFound Error
+* **Symptom:** After the `cavern` image switch, Cavern failed to initialize, resulting in a `503 Service Unavailable` from HAProxy. Cavern's logs showed it couldn't obtain service URLs from `posixmapper-proxy`.
+* **Diagnosis:** We discovered the `posixmapper` container's startup script (`/usr/bin/cadc-tomcat-start`) was failing to unpack its `posix-mapper.war` due to the `unzip` command being missing and a "disk space" error during `unzip` installation within the container. This left `posixmapper` undeployed.
+* **Resolution:** We bypassed the problematic `cadc-tomcat-start` script. We extracted `posix-mapper.war` from the official image locally, unpacked it, and then mounted the *unpacked* directory (`~/posixmapper_unpacked`) directly into the `posixmapper` container's Tomcat `webapps` folder (`/usr/share/tomcat/webapps/posix-mapper`) via `docker-compose.yml`. This allowed `posixmapper` to deploy cleanly and start successfully.
 
-* **Cavern Startup:** Throughout the troubleshooting, `cavern` consistently reported successful startup of its Tomcat application, successful certificate import via `cavern_init_cert.sh`, and correct initialization of its UWS database.
-* **User Mapping Observation:** Once `posixmapper` was stable, `cavern` successfully communicated with it for user mapping. For example, during a request for `/home/testuser`, `cavern` logs showed successful resolution of `PosixPrincipal [uidNumber=10000,10000,testuser]`, indicating successful integration.
-* **Initial VOSpace Problem:** Initial attempts to `GET` VOSpace nodes (e.g., `/home/testuser`) resulted in a `ca.nrc.cadc.net.ResourceNotFoundException: NodeNotFound: vos://localhost~cavern_test_instance/home/testuser` error. This `NodeNotFound` error was expected, as the VOSpace path did not yet exist in Cavern's underlying data storage (`./data/cavern_files`). This confirmed core services were communicating.
-* **Solution Attempt (leading to current issue):** An attempt to create the `ContainerNode` via a `PUT` request with an XML payload was made. This led directly to the "Latest Current Issue" detailed below.
+### 3. Current Blocking Issue: Persistent Cavern Initialization Failure (`StringIndexOutOfBoundsException`)
 
+* **Symptom:** Despite `posixmapper` now deploying correctly, Cavern still fails to initialize, showing `HTTP Status 500` and the following in its logs:
 
+    ```java
+    Caused by: java.lang.RuntimeException: failed to load properties from cache, src=http://posixmapper-proxy:8080/posix-mapper/resource-caps
+        at ca.nrc.cadc.reg.client.RegistryClient.getAccessURL(RegistryClient.java:245)
+        ...
+    Caused by: java.lang.StringIndexOutOfBoundsException: begin 0, end -1, length 21
+        at ca.nrc.cadc.util.MultiValuedProperties.load(MultiValuedProperties.java:170)
+    ```
+* **Detailed Diagnosis:**
+    * Cavern's configuration (`cavern.properties`, `cadc-registry.properties`) has been updated to point `org.opencadc.cavern.registryUrl`, `org.opencadc.cavern.posixMapperResourceId`, and `org.opencadc.auth.StandardIdentityManager.capabilitiesURL` to `http://posixmapper-proxy:8080/posix-mapper/capabilities` (the XML capabilities endpoint).
+    * We've confirmed via `curl` *from inside the `posixmapper-proxy` container*:
+        * `curl http://posixmapper:8080/posix-mapper/capabilities` returns `200 OK` with the expected **XML content**.
+        * `curl http://localhost:8080/posix-mapper/resource-caps` returns `200 OK` with `Content-Type: text/plain` and the content of a simple, valid `dummy.key=dummy.value` properties file (which we explicitly served via Nginx at that path).
+    * **The Contradiction:** Despite `posixmapper-proxy` serving a `200 OK` with valid properties content at `http://posixmapper-proxy:8080/posix-mapper/resource-caps`, Cavern's `RegistryClient` (specifically `MultiValuedProperties.load`) is *still* attempting to parse it as properties and failing with `StringIndexOutOfBoundsException`. It appears to ignore the `Content-Type` header or has a hardcoded expectation for properties at that exact path. We also tried serving dummy XML at this path, but the error persisted, indicating it's always trying to parse it as properties.
 
-## 3. Latest Current Issue: Cavern VOSpace Node Creation (XML Schema Validation Failure)
+**Current Block:**
 
-This section outlines the current problems affecting the functionality of the Cavern web application. Both issues point to underlying problems with how the Cavern web application is built and deployed.
+The `StandardIdentityManager` (and by extension, Cavern) cannot initialize because it appears to be hardcoded to fetch and parse a properties file from `http://posixmapper-proxy:8080/posix-mapper/resource-caps`, and it fails to parse even a simple `key=value` file, leading to a `StringIndexOutOfBoundsException`. This prevents the entire Cavern service from starting up.
 
-### 3.1. Cavern VOSpace Node Creation (XML Schema Validation Failure)
+**Questions for the Team:**
 
-* **Problem:** When attempting to create a VOSpace `ContainerNode` using a `PUT` request to Cavern's API, the service returns an `InvalidArgument` error with the message: `XML failed schema validation: Error on line 1: cvc-elt.1.a: Cannot find the declaration of element 'vos:ContainerNode'.`.
+* Is there a known issue with `ca.nrc.cadc.util.MultiValuedProperties.load` or `ca.nrc.cadc.reg.client.RegistryClient` in `cavern:0.8.2` (or its underlying `cadc-util` library) that causes it to *insist* on parsing a properties file from `resource-caps` and fail even on valid input?
+* Is there a specific, expected content/format for `http://posixmapper-proxy:8080/posix-mapper/resource-caps` that `StandardIdentityManager` requires to successfully initialize? (e.g., specific keys/values, or perhaps it expects XML but is calling a properties parser?)
+* Are there any other configuration properties in Cavern that could influence this specific `resource-caps` lookup?
+* Could this be related to a specific version of Java or a library incompatibility within the `cavern:0.8.2` image?
 
-* **Details:** This indicates that:
-    * The client is sending correctly formatted VOSpace 2.0 XML with the `vos:ContainerNode` element and the `http://www.ivoa.net/xml/VOSpace/v2.0` namespace. This format aligns with VOSpace standards and Cavern's internal `xmlprocessor.java` confirms its expectation of `VOSpace-2.1.xsd` corresponding to this namespace.
-    * However, Cavern's internal XML parser is, for an unknown reason, unable to locate or properly recognize the definition of `ContainerNode` within its own loaded VOSpace schema.
-
-* **Current Status:** This is a **server-side problem within the Cavern image's configuration or bundled schema files**, as client-side adjustments to the `xsi:schemaLocation` attribute (or its removal) have not resolved the validation failure. It points to a deeper issue with how Cavern's XML validator processes or accesses its internal schema definitions. We were preparing to investigate this by enabling verbose server-side logging after resolving other immediate issues.
-
-### 3.2. Missing Swagger UI Static Assets
-
-* **Problem:** When accessing the Cavern API homepage (`https://localhost:8443/cavern/`) in a web browser, the page appears unstyled, and the browser's developer console shows numerous `Failed to load resource: the server responded with a status of 404` errors for critical Swagger UI CSS (e.g., `screen.css`, `typography.css`) and JavaScript files (e.g., `jquery-1.8.0.min.js`, `swagger-ui.js`).
-* **Context & Initial Fix:** Initially, an `HTTP Status 404 – Not Found` was encountered due to an un-evaluated `${request.servletPath}` placeholder in `index.html`. This was corrected to use a static relative path (`href="/cavern/"`) for the logo link, resolving the immediate link error.
-* **Root Cause Identified:** Inspection of the local source code repository (`opencadc/vos/vos-main/cavern/src/main/webapp`) confirmed that the `css/`, `js/`, and `lib/` directories (containing these Swagger UI assets) are missing from the local clone. This indicates these assets are not being correctly packaged into the `cavern.war` file during the Gradle build.
-
-### Overall Summary of Current Issues
-
-Both issues (XML Schema Validation Failure and Missing Swagger UI Assets) point to a fundamental problem with the Cavern web application's build and deployment process. Critical static assets (for Swagger UI) and potentially critical XML schema definition files (for VOSpace validation) are not being consistently included in the final `cavern.war` artifact. This suggests either:
-* An incomplete or corrupted local clone of the repository.
-* A missing or failing Gradle build step that is supposed to download, generate, or copy these necessary files into the `src/main/webapp` directory before the `.war` is assembled.
-
-Our immediate next step is to address the missing Swagger UI assets by ensuring they are present in the `src/main/webapp` directory, then rebuilding and redeploying Cavern. Once the Swagger UI is functional, we can then proceed with the detailed server-side logging to diagnose the persistent XML schema validation error.
-
+Any insights into this particular `MultiValuedProperties.load` behavior or `StandardIdentityManager`'s initialization would be greatly appreciated, as we've exhausted external configuration and file content variations.
 
 ## 4. `curl` Commands for Verification and Operations
 

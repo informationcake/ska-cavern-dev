@@ -1,5 +1,4 @@
 {
-  "sub": "localtestuser_id",
-  "preferred_username": "testuser",
-  "name": "Local Test User"
+  "sub": "mock-user-id",
+  "preferred_username": "mockuser"
 }

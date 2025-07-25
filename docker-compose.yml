@@ -1,9 +1,6 @@
-# ~/ska-cavern-dev/compose/docker-compose.yml
-
 version: '3.5'
 
 services:
-  # --- Core PrepareData Application ---
   core:
     container_name: ska-src-local-data-preparer-core
     build:
@@ -17,10 +14,10 @@ services:
       ABS_PATH_CELERY_RESULTS: /var/celery/results
       CAVERN_API_URL: "https://haproxy:443/cavern"
       CAVERN_API_TOKEN: "your_local_test_token"
-    ports:
-      - "8000:8000"
+    # ports:
+    #   - "8000:8000"
     networks:
-      - preparedata-network
+      - skao-src-network
     depends_on:
       - celery-worker
       - cavern
@@ -30,7 +27,6 @@ services:
       - ./data/rse_data:/rse/deterministic:ro
       - ./logs/celery_results:/var/celery/results:rw
 
-  # --- Celery Worker ---
   celery-worker:
     container_name: ska-src-local-data-preparer-celery-worker
     build:
@@ -41,39 +37,28 @@ services:
       ABS_PATH_CELERY_RESULTS: /var/celery/results
       CAVERN_API_URL: "https://haproxy:443/cavern"
       CAVERN_API_TOKEN: "your_local_test_token"
-      REQUESTS_CA_BUNDLE: /config/haproxy/haproxy.crt
     command: celery -A prepare_data.worker worker --loglevel=info -c 1
     networks:
-      - preparedata-network
+      - skao-src-network
     depends_on:
       - rabbitmq
       - cavern
-      - postgres_cavern
       - haproxy
     volumes:
       - ./data/cavern_data:/users/cavern/home:rw
       - ./data/rse_data:/rse/deterministic:ro
       - ./logs/celery_results:/var/celery/results:rw
-      - ./config/haproxy/haproxy.crt:/config/haproxy/haproxy.crt:ro
 
-
-  # --- RabbitMQ Message Broker ---
   rabbitmq:
     container_name: ska-src-local-data-preparer-rabbitmq
     image: rabbitmq:3.12-management
-    environment:
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: guest
-    ports:
-      - "5672:5672"
-      - "15672:15672" # Web UI
+    # ports:
+    #   - "5672:5672"
+    #   - "15672:15672"
     networks:
-      - preparedata-network
-    volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
+      skao-src-network:
+        ipv4_address: 172.27.0.10
 
-
-  # --- PostgreSQL service for Cavern's UWS database ---
   postgres_cavern:
     image: postgres:15-alpine
     container_name: postgres_cavern
@@ -85,11 +70,10 @@ services:
       - ./data/db_init_cavern:/docker-entrypoint-initdb.d:ro
       - postgres_cavern_data:/var/lib/postgresql/data
     networks:
-      - preparedata-network
+      - skao-src-network
 
-  # --- PostgreSQL service for POSIX Mapper's database ---
   postgres_posixmapper:
-    image: postgres:13.20
+    image: postgres:13.2
     container_name: postgres_posixmapper
     environment:
       POSTGRES_DB: mapping
@@ -99,53 +83,32 @@ services:
       - ./data/db_init_posixmapper:/docker-entrypoint-initdb.d:ro
       - postgres_posixmapper_data:/var/lib/postgresql/data
     networks:
-      - preparedata-network
-    ports:
-      - "5432:5432"
+      - skao-src-network
+    # ports:
+    #   - "5432:5432"
 
-  # --- HAProxy Service for Cavern SSL Termination ---
   haproxy:
     container_name: ska-src-local-data-preparer-haproxy
     image: haproxytech/haproxy-debian:latest
+    # This is the only essential port we need to expose
     ports:
-      - "8443:443" # HAProxy listens on host 8443, forwards to its internal 443
+      - "9443:443"
     volumes:
       - ./config/haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
       - ./config/haproxy/haproxy.pem:/usr/local/etc/haproxy/haproxy.pem:ro
     networks:
-      - preparedata-network
+      skao-src-network:
+        ipv4_address: 172.27.0.2
     depends_on:
       - cavern
-
-  # --- Nginx Proxy for PosixMapper Capabilities (to rewrite HTTPS to HTTP) ---
-  posixmapper-proxy:
-    container_name: ska-src-local-data-preparer-posixmapper-proxy
-    image: nginx:alpine
-    ports:
-      - "8084:8080"
-    volumes:
-      - ./config/nginx/posixmapper-proxy.conf:/etc/nginx/conf.d/posixmapper-proxy.conf:ro
-      - ./config/common/posixmapper-static-capabilities.xml:/usr/share/nginx/html/posixmapper-static-capabilities.xml:ro
-      # REMOVED: - ./config/nginx/resource-caps.properties:/etc/nginx/resource-caps.properties:ro
-      # NEW: Mount the dummy XML file at the correct path
-      - ./config/nginx/dummy-resource-caps.xml:/etc/nginx/dummy-resource-caps.xml:ro # Keep this for the XML capabilities if needed elsewhere
-      #- ./config/nginx/dummy-resource-caps.properties:/etc/nginx/dummy-resource-caps.properties:ro # NEW/UPDATED VOLUME MOUNT for dummy PROPERTIES
-    networks:
-      - preparedata-network
-    depends_on:
       - posixmapper
 
-  # --- POSIX Mapper service ---
   posixmapper:
     container_name: ska-src-local-data-preparer-posixmapper
     image: images.opencadc.org/platform/posix-mapper:0.3.1
-    ports:
-      - "8082:8080"
+    # ports:
+    #   - "8082:8080"
     environment:
-      POSIX_MAPPER_MAX_ACTIVE: "8"
-      POSIX_MAPPER_USERNAME: "posixmapper"
-      POSIX_MAPPER_PASSWORD: "posixmapperpwd"
-      POSIX_MAPPER_URL: "jdbc:postgresql://postgres_posixmapper:5432/mapping"
       JAVA_OPTS: >
         -Dorg.opencadc.cadcregistry.config.file=/config/cadc-registry.properties
         -Djava.util.logging.config.file=/config/logging.properties
@@ -156,86 +119,67 @@ services:
         -DPOSIX_MAPPER_URL=jdbc:postgresql://postgres_posixmapper:5432/mapping
     volumes:
       - ./config/common:/config:ro
-      #- ./scripts/wait-for-it.sh:/usr/local/bin/wait-for-it.sh:ro
-      #- ./scripts/cadc-tomcat-start:/usr/bin/cadc-tomcat-start:ro
-      - ./config/posixmapper/META-INF/context.xml:/usr/share/tomcat/webapps/posix-mapper/META-INF/context.xml:ro
-      #- ./config/posixmapper/META-INF/context.xml:/tmp/config/context.xml:ro
-      - ~/posixmapper_unpacked:/usr/share/tomcat/webapps/posix-mapper:rw
     networks:
-      - preparedata-network
+      skao-src-network:
+        ipv4_address: 172.27.0.11
     depends_on:
       - postgres_posixmapper
       - registrymock
-    #command: ["tail", "-f", "/dev/null"]
-    #command: ["/usr/bin/cadc-tomcat-start"]
 
-  # --- Cavern service itself (UPDATED TO USE OFFICIAL IMAGE) ---
   cavern:
-    container_name: ska-src-local-data-preparer-cavern # Give it a specific name within this compose file
-    image: images.opencadc.org/platform/cavern:0.8.2 # Use the official image
-    # The 'build' section is removed as we are using a pre-built image
-    # build:
-    #   context: ${HOME}/cavern-code/vos/cavern
-    #   dockerfile: ${HOME}/ska-cavern-dev/dockerfiles/Dockerfile.CavernModified
-    # The 'ports' mapping is removed as HAProxy handles external exposure on 8443
-    # ports:
-    #   - "8443:8443"
+    container_name: ska-src-local-data-preparer-cavern
+    image: images.opencadc.org/platform/cavern:0.8.2
     volumes:
-      # Keep these volumes if the official Cavern image expects data or config from your host
-      # You might need to verify if the internal paths are correct for the official image
       - ./data/cavern_data:/data/cavern_files:rw
       - ./config/common:/config:ro
-      # Remove volumes that were specific to your custom Dockerfile or startup scripts
-      # - ./scripts/cavern_startup.sh:/usr/local/bin/cavern_startup.sh:ro
-      # - ./scripts/cavern_init_cert.sh:/usr/local/bin/cavern_init_cert.sh:ro
-      # - ./config/haproxy/haproxy.crt:/tmp/haproxy/haproxy.crt:ro
     environment:
-      # Keep environment variables that configure Cavern's behavior,
-      # assuming the official image uses these same environment variables for configuration.
       JAVA_OPTS: >
         -Dorg.opencadc.cavern.config.file=/config/cavern.properties
+        -Dorg.opencadc.cadcregistry.config.file=/config/cadc-registry.properties
         -Djava.util.logging.config.file=/config/logging.properties
         -Dlog4j.configuration=file:/config/log4j.properties
-        -Dlog4j.debug
         -Dca.nrc.cadc.util.PropertiesReader.dir=/config
-      CLASSPATH: /config:${CLASSPATH:-}
-    user: root:root # Keep if necessary for permissions within the container
+    user: root:root
     networks:
-      - preparedata-network
+      skao-src-network:
+        ipv4_address: 172.27.0.12
     depends_on:
       - postgres_cavern
-      - posixmapper-proxy
+      - posixmapper
       - registrymock
-    # The custom entrypoint is removed as the official image will have its own startup logic
-    # entrypoint: |
-    #   /bin/bash -c "
-    #     set -e
-    #     /usr/local/bin/cavern_init_cert.sh
-    #     /usr/local/bin/cavern_startup.sh
-    #   "
+    entrypoint: |
+      /bin/bash -c "
+        echo '--> Waiting for posixmapper service to be available at http://172.27.0.11:8080...'
+        while ! curl -s --fail http://172.27.0.11:8080/posix-mapper/capabilities > /dev/null; do
+          printf '.'
+          sleep 2
+        done
+        echo
+        echo '--> Posixmapper is up! Starting Cavern service...'
+        exec /usr/bin/cadc-tomcat-start
+      "
 
-  # --- Mock Registry service to serve resource-caps.xml ---
   registrymock:
     container_name: ska-src-local-data-preparer-registrymock
     image: nginx:alpine
-    ports:
-      - "8083:8080"
+    # ports:
+    #   - "8083:8080"
     volumes:
       - ./config/common/reg:/usr/share/nginx/html/reg:ro
       - ./config/nginx/registrymock.conf:/etc/nginx/conf.d/registrymock.conf:ro
       - ./config/nginx/oidc_files:/etc/nginx/oidc_static:ro
     networks:
-      - preparedata-network
+      skao-src-network:
+        ipv4_address: 172.27.0.13
 
-# --- Define the shared network ---
 networks:
-  preparedata-network:
+  skao-src-network:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.27.0.0/16
 
-# --- Define the named volumes ---
 volumes:
   postgres_cavern_data:
   postgres_posixmapper_data:
   rabbitmq_data:
-  # rse_data: # Commented out as per your original file
-  # celery_results: # Commented out as per your original file

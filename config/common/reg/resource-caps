@@ -1,0 +1,3 @@
+# This file tells the RegistryClient where to find the posix-mapper.
+# It now points to a static IP address that we will assign in Docker Compose.
+ivo://opencadc.org/posix-mapper = http://172.26.0.11:8080/posix-mapper/capabilities

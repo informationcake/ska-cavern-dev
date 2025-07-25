@@ -1,0 +1,103 @@
+WARNING: The requested image's platform (linux/amd64) does not match the detected host platform (linux/arm64/v8) and no specific platform was requested
+Thu Jul 17 17:18:57 UTC 2025 cadc-tomcat-start START
+user: root
+home: /root
+image version: 
+Configure tomcat with extra properties: /config/catalina.properties
+war-rename: mv posix-mapper.war src#posix-mapper.war
+Link proxy certificate: /config/*.pem
+Thu Jul 17 17:18:58 UTC 2025 cadc-tomcat-start DONE
+Java virtual machine used: /usr/lib/jvm/jre/bin/java
+classpath used: /usr/share/tomcat/bin/bootstrap.jar:/usr/share/tomcat/bin/tomcat-juli.jar:
+main class used: org.apache.catalina.startup.Bootstrap
+flags used: -XX:+HeapDumpOnOutOfMemoryError -XX:OnError='cat hs_err_pid%p.log' -Xms512m -Xmx2048m -XX:+UseParallelGC -Djavax.sql.DataSource.Factory=org.apache.tomcat.dbcp.dbcp2.BasicDataSourceFactory 
+options used: -Dcatalina.base=/usr/share/tomcat -Dcatalina.home=/usr/share/tomcat -Djava.endorsed.dirs= -Djava.io.tmpdir=/var/cache/tomcat/temp -Djava.util.logging.config.file=/usr/share/tomcat/conf/logging.properties -Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager
+arguments used: start
+NOTE: Picked up JDK_JAVA_OPTIONS:  --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.util.concurrent=ALL-UNNAMED --add-opens=java.rmi/sun.rmi.transport=ALL-UNNAMED
+17-Jul-2025 17:19:01.012 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version name:   Application Server
+17-Jul-2025 17:19:01.032 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server built:          
+17-Jul-2025 17:19:01.035 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version number: 
+17-Jul-2025 17:19:01.036 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Name:               Linux
+17-Jul-2025 17:19:01.037 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Version:            5.15.49-linuxkit
+17-Jul-2025 17:19:01.037 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Architecture:          amd64
+17-Jul-2025 17:19:01.038 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Java Home:             /usr/lib/jvm/java-11-openjdk-11.0.25.0.9-3.fc40.x86_64
+17-Jul-2025 17:19:01.038 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Version:           11.0.25+9
+17-Jul-2025 17:19:01.039 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Vendor:            Red Hat, Inc.
+17-Jul-2025 17:19:01.039 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_BASE:         /usr/share/tomcat
+17-Jul-2025 17:19:01.040 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_HOME:         /usr/share/tomcat
+17-Jul-2025 17:19:01.106 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.lang=ALL-UNNAMED
+17-Jul-2025 17:19:01.108 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.io=ALL-UNNAMED
+17-Jul-2025 17:19:01.110 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util=ALL-UNNAMED
+17-Jul-2025 17:19:01.110 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+17-Jul-2025 17:19:01.110 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.rmi/sun.rmi.transport=ALL-UNNAMED
+17-Jul-2025 17:19:01.111 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -XX:+HeapDumpOnOutOfMemoryError
+17-Jul-2025 17:19:01.111 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -XX:OnError=cat hs_err_pid%p.log
+17-Jul-2025 17:19:01.112 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Xms512m
+17-Jul-2025 17:19:01.112 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Xmx2048m
+17-Jul-2025 17:19:01.114 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -XX:+UseParallelGC
+17-Jul-2025 17:19:01.115 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djavax.sql.DataSource.Factory=org.apache.tomcat.dbcp.dbcp2.BasicDataSourceFactory
+17-Jul-2025 17:19:01.115 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.base=/usr/share/tomcat
+17-Jul-2025 17:19:01.115 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.home=/usr/share/tomcat
+17-Jul-2025 17:19:01.116 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.endorsed.dirs=
+17-Jul-2025 17:19:01.116 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.io.tmpdir=/var/cache/tomcat/temp
+17-Jul-2025 17:19:01.117 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.config.file=/usr/share/tomcat/conf/logging.properties
+17-Jul-2025 17:19:01.118 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager
+17-Jul-2025 17:19:02.819 INFO [main] org.apache.coyote.AbstractProtocol.init Initializing ProtocolHandler ["http-nio-8080"]
+17-Jul-2025 17:19:02.956 INFO [main] org.apache.catalina.startup.Catalina.load Server initialization in [2860] milliseconds
+17-Jul-2025 17:19:03.229 INFO [main] org.apache.catalina.core.StandardService.startInternal Starting service [Catalina]
+17-Jul-2025 17:19:03.230 INFO [main] org.apache.catalina.core.StandardEngine.startInternal Starting Servlet engine: [Application Server]
+17-Jul-2025 17:19:03.352 INFO [main] org.apache.catalina.startup.HostConfig.deployWAR Deploying web application archive [/var/lib/tomcat/webapps/src#posix-mapper.war]
+2025-07-17 17:19:09.376 posix-mapper [main] WARN  LogControlServlet - log level: ca.nrc.cadc.log =  WARN
+2025-07-17 17:19:09.398 posix-mapper [main] WARN  LogControlServlet - ca.nrc.cadc.rest: INFO
+2025-07-17 17:19:09.400 posix-mapper [main] WARN  LogControlServlet - ca.nrc.cadc.util: INFO
+2025-07-17 17:19:09.400 posix-mapper [main] WARN  LogControlServlet - ca.nrc.cadc.vosi: INFO
+2025-07-17 17:19:09.401 posix-mapper [main] WARN  LogControlServlet - ca.nrc.cadc.db: INFO
+2025-07-17 17:19:09.402 posix-mapper [main] WARN  LogControlServlet - org.hibernate: INFO
+2025-07-17 17:19:09.403 posix-mapper [main] WARN  LogControlServlet - org.opencadc.posix: INFO
+2025-07-17 17:19:09.403 posix-mapper [main] WARN  LogControlServlet - init complete
+2025-07-17 17:19:09.536 posix-mapper [main] INFO  RestServlet - get: org.opencadc.posix.mapper.web.user.GetAction [loaded]
+2025-07-17 17:19:09.540 posix-mapper [main] INFO  RestServlet - init: org.opencadc.posix.mapper.web.PosixInitAction [loaded]
+17-Jul-2025 17:19:09.541 INFO [main] org.opencadc.posix.mapper.web.PosixInitAction.initConfig initConfig: START
+17-Jul-2025 17:19:09.555 INFO [main] org.opencadc.posix.mapper.web.PosixInitAction.initConfig initConfig: OK
+17-Jul-2025 17:19:09.556 INFO [main] org.opencadc.posix.mapper.web.PosixInitAction.initDatabase initDatabase: START
+2025-07-17 17:19:11.338 posix-mapper [main] INFO  InitDatabase - process file: mapping.modelversion.sql
+2025-07-17 17:19:11.348 posix-mapper [main] INFO  InitDatabase - org.opencadc.posix.mapper.db.InitializeMappingDatabase found: mapping.modelversion.sql at file:/var/lib/tomcat/webapps/src%23posix-mapper/WEB-INF/classes/mapping.modelversion.sql
+2025-07-17 17:19:11.354 posix-mapper [main] INFO  InitDatabase - execute statement:
+create table posixmap.ModelVersion ( model varchar(32) not null primary key, version varchar(32) not null, lastModified timestamp not null ) 
+2025-07-17 17:19:11.393 posix-mapper [main] INFO  InitDatabase - process file: mapping.model.sql
+2025-07-17 17:19:11.399 posix-mapper [main] INFO  InitDatabase - org.opencadc.posix.mapper.db.InitializeMappingDatabase found: mapping.model.sql at file:/var/lib/tomcat/webapps/src%23posix-mapper/WEB-INF/classes/mapping.model.sql
+2025-07-17 17:19:11.401 posix-mapper [main] INFO  InitDatabase - execute statement:
+CREATE TABLE posixmap.Users ( uid      INTEGER GENERATED BY DEFAULT AS IDENTITY NOT NULL, username VARCHAR(255) UNIQUE, CONSTRAINT pk_users PRIMARY KEY (uid) ) 
+2025-07-17 17:19:11.407 posix-mapper [main] INFO  InitDatabase - execute statement:
+CREATE TABLE posixmap.Groups ( gid       INTEGER GENERATED BY DEFAULT AS IDENTITY NOT NULL, groupURI  VARCHAR(255) UNIQUE, CONSTRAINT pk_groups PRIMARY KEY (gid) ) 
+2025-07-17 17:19:11.412 posix-mapper [main] INFO  InitDatabase - execute statement:
+create sequence posixmap.groups_gid_seq1 start with 50000 
+2025-07-17 17:19:11.414 posix-mapper [main] INFO  InitDatabase - execute statement:
+create sequence posixmap.users_uid_seq1 start with 10000 
+17-Jul-2025 17:19:11.433 INFO [main] org.opencadc.posix.mapper.web.PosixInitAction.initDatabase initDatabase: jdbc/posix-mapper posixmap OK
+2025-07-17 17:19:11.442 posix-mapper [main] INFO  RestServlet - get: org.opencadc.posix.mapper.web.group.GetAction [loaded]
+2025-07-17 17:19:11.444 posix-mapper [main] INFO  RestServlet - init: org.opencadc.posix.mapper.web.PosixInitAction [loaded]
+17-Jul-2025 17:19:11.444 INFO [main] org.opencadc.posix.mapper.web.PosixInitAction.initConfig initConfig: START
+17-Jul-2025 17:19:11.454 INFO [main] org.opencadc.posix.mapper.web.PosixInitAction.initConfig initConfig: OK
+17-Jul-2025 17:19:11.455 INFO [main] org.opencadc.posix.mapper.web.PosixInitAction.initDatabase initDatabase: START
+17-Jul-2025 17:19:11.563 INFO [main] org.opencadc.posix.mapper.web.PosixInitAction.initDatabase initDatabase: jdbc/posix-mapper posixmap OK
+2025-07-17 17:19:11.632 posix-mapper [main] INFO  RestServlet - get: ca.nrc.cadc.vosi.CapGetAction [loaded]
+2025-07-17 17:19:11.636 posix-mapper [main] INFO  RestServlet - head: ca.nrc.cadc.vosi.CapHeadAction [loaded]
+2025-07-17 17:19:11.640 posix-mapper [main] INFO  RestServlet - init: ca.nrc.cadc.vosi.CapInitAction [loaded]
+2025-07-17 17:19:13.549 posix-mapper [main] INFO  CapInitAction - doInit: capabilities template=/capabilities.xml stored via JNDI: src-posix-mapper.CapabilitiesServlet.cap-template
+2025-07-17 17:19:13.553 posix-mapper [main] INFO  CapInitAction - doInit: authRequired=false stored via JNDI: src-posix-mapper.CapabilitiesServlet.authRequired
+2025-07-17 17:19:13.562 posix-mapper [main] INFO  CapInitAction - doInit: version=ca.nrc.cadc.rest.Version@4bd51d3e stored via JNDI: src-posix-mapper.CapabilitiesServlet.version
+2025-07-17 17:19:13.572 posix-mapper [main] INFO  AvailabilityServlet - application: src-posix-mapper plugin impl: org.opencadc.posix.mapper.ServiceAvailability
+17-Jul-2025 17:19:13.593 INFO [main] org.apache.catalina.startup.HostConfig.deployWAR Deployment of web application archive [/var/lib/tomcat/webapps/src#posix-mapper.war] has finished in [10,235] ms
+17-Jul-2025 17:19:13.608 INFO [main] org.apache.catalina.startup.HostConfig.deployDirectory Deploying web application directory [/var/lib/tomcat/webapps/ROOT]
+17-Jul-2025 17:19:13.737 INFO [main] org.apache.catalina.startup.HostConfig.deployDirectory Deployment of web application directory [/var/lib/tomcat/webapps/ROOT] has finished in [129] ms
+17-Jul-2025 17:19:13.875 INFO [main] org.apache.coyote.AbstractProtocol.start Starting ProtocolHandler ["http-nio-8080"]
+17-Jul-2025 17:19:13.940 INFO [main] org.apache.catalina.startup.Catalina.start Server startup in [10981] milliseconds
+2025-07-17 17:43:08.180 posix-mapper [request-proc-1] INFO  RestServlet - {"@timestamp":"2025-07-17 17:43:08.176","service":{"name":"src"},"thread":{"name":"request-proc-1"},"log":{"level":"info"},"phase":"start","ip":"172.26.0.60","method":"GET","authMethod":"anon","path":"/src/posix-mapper/capabilities"}
+2025-07-17 17:43:08.425 posix-mapper [request-proc-1] INFO  RestServlet - {"@timestamp":"2025-07-17 17:43:08.423","service":{"name":"src"},"thread":{"name":"request-proc-1"},"log":{"level":"info"},"phase":"end","ip":"172.26.0.60","method":"GET","authMethod":"anon","path":"/src/posix-mapper/capabilities","success":true,"duration":454}
+2025-07-17 17:45:17.521 posix-mapper [request-proc-2] INFO  RestServlet - {"@timestamp":"2025-07-17 17:45:17.520","service":{"name":"src"},"thread":{"name":"request-proc-2"},"log":{"level":"info"},"phase":"start","ip":"172.26.0.60","method":"GET","authMethod":"anon","path":"/src/posix-mapper/capabilities"}
+2025-07-17 17:45:17.612 posix-mapper [request-proc-2] INFO  RestServlet - {"@timestamp":"2025-07-17 17:45:17.610","service":{"name":"src"},"thread":{"name":"request-proc-2"},"log":{"level":"info"},"phase":"end","ip":"172.26.0.60","method":"GET","authMethod":"anon","path":"/src/posix-mapper/capabilities","success":true,"duration":111}
+2025-07-17 17:47:34.111 posix-mapper [request-proc-3] INFO  RestServlet - {"@timestamp":"2025-07-17 17:47:34.095","service":{"name":"src"},"thread":{"name":"request-proc-3"},"log":{"level":"info"},"phase":"start","ip":"172.26.0.60","method":"GET","authMethod":"anon","path":"/src/posix-mapper/capabilities"}
+2025-07-17 17:47:34.441 posix-mapper [request-proc-3] INFO  RestServlet - {"@timestamp":"2025-07-17 17:47:34.439","service":{"name":"src"},"thread":{"name":"request-proc-3"},"log":{"level":"info"},"phase":"end","ip":"172.26.0.60","method":"GET","authMethod":"anon","path":"/src/posix-mapper/capabilities","success":true,"duration":439}
+2025-07-17 17:50:41.841 posix-mapper [request-proc-4] INFO  RestServlet - {"@timestamp":"2025-07-17 17:50:41.838","service":{"name":"src"},"thread":{"name":"request-proc-4"},"log":{"level":"info"},"phase":"start","ip":"172.26.0.60","method":"GET","authMethod":"anon","path":"/src/posix-mapper/capabilities"}
+2025-07-17 17:50:41.949 posix-mapper [request-proc-4] INFO  RestServlet - {"@timestamp":"2025-07-17 17:50:41.947","service":{"name":"src"},"thread":{"name":"request-proc-4"},"log":{"level":"info"},"phase":"end","ip":"172.26.0.60","method":"GET","authMethod":"anon","path":"/src/posix-mapper/capabilities","success":true,"duration":123}

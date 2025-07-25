@@ -1,0 +1,54 @@
+#!/bin/bash
+set -e # Exit immediately if a command exits with a non-zero status.
+
+SELF=$(basename "$(pwd)")
+IMG="images.opencadc.org/platform/posix-mapper:0.3.1"
+
+# Source the static IP script to set DOCKER_STATIC_IP and DOCKER_NET
+. $HOME/bin/docker-static-ip "$SELF"
+
+echo "DOCKER_STATIC_IP: $DOCKER_STATIC_IP"
+echo "      DOCKER_NET: $DOCKER_NET"
+
+# Remove old log file and create a new one
+\rm -f tomcat.log && touch tomcat.log
+
+# Get HAProxy's IP for --add-host
+HAP_HOST="haproxy.cadc.dao.nrc.ca"
+HAP_IP=$(docker inspect haproxy | jq -r '.[0].NetworkSettings.Networks."docker26".IPAddress')
+
+if [ -z "$HAP_IP" ]; then
+  echo "Error: Could not get IP address for haproxy container." >&2
+  exit 1
+fi
+
+# Get PostgreSQL IP (assuming postgres_posixmapper is the container name)
+# We will rely on Docker's internal DNS for DBs, so no explicit IP needed here for --add-host
+# Or, if you want static IP for DB, you'd need to manage it like haproxy.
+# For simplicity, let's assume direct service name resolution for DBs.
+# Patrick's original script uses 'lxc list' which is not Docker compatible.
+# For Docker, we reference the DB service name directly in the URL in catalina.properties.
+# So, no need for PGIP here.
+
+# Define local data directory (relative to this script's location)
+DATADIR="$(pwd)/../local_data/src-posix-mapper" # Adjusted path
+mkdir -p "$DATADIR" # Ensure directory exists
+
+# Construct the docker run command
+CMD="docker run --rm --user root:root \
+    --network=$DOCKER_NET --ip=$DOCKER_STATIC_IP \
+    --add-host $HAP_HOST:$HAP_IP \
+    --volume=$(pwd)/config:/config:ro \
+    --volume=${DATADIR}:/data:rw \
+    --name $SELF $IMG"
+
+echo "$CMD"
+
+# Execute the command in the background and redirect output to log
+exec $CMD >& tomcat.log &
+
+# If -f argument is provided, tail the log file
+if [ "$1" = "-f" ]; then
+    exec tail -100f tomcat.log
+fi
+
